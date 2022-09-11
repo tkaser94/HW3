@@ -1,0 +1,167 @@
+---
+title: "ADA HW2"
+author: "Taylor Kaser"
+date: "2022-09-04"
+output: html_document
+---
+Please complete tasks 1-7 using reproducible coding practices. Use R syntax to solve all problems (i.e. do not manually change values/variables in datasets or check them manually to make sure things are correct except as a double or triple check). Please cut and paste each problem before each R markdown chunk and annotate your code within the chunks.
+
+```{r Open_libraries}
+# Open libraries
+library(package = "tidyverse")
+library(package = "readr")
+library(package = "table1")
+```
+
+1. Import class one survey data from our Github site (https://github.com/kijohnson/ADA) (The dataset is called ‘Class 1 Survey Fall 2022.csv’), calling the R dataframe that you create C1survey.
+
+```{r Question1, include=FALSE}
+C1survey <-
+ read_csv(
+   "https://raw.githubusercontent.com/kijohnson/ADA/master/Class%201%20Survey%20Fall%202022.csv"
+   )
+```
+
+2. Determine: a. the number of observations (i.e. the number of people who filled out the survey) and b. the number of variables in the dataframe.
+
+```{r num rows and columns}
+dim(C1survey)
+```
+* **Number of observations**: 42
+* **Number of variables**: 27
+
+3. a. Rename the column variables to something shorter and that is descriptive of what the variable is about (for example like_dogs for the ‘Do you like dogs?’ question variable) and b. Display that they are renamed.
+
+```{r Rename_vars}
+# Renaming variables from survey questions to shorter variable names
+
+C1survey_renamed <- C1survey %>%
+  rename("like_cats"="Do you like cats?") %>%
+  rename("like_dogs"="Do you like dogs?") %>%
+  rename("desert_isld"="If you were stranded on a desert island, what is the one item you want to have with you?") %>%
+  rename("life_slogan"= 'If you were to create a slogan for your life, what would the slogan be? (Examples: "Eat, drink, and be merry, for tomorrow, we all die." "Bite off more than you can chew." "There are far better things ahead than any we leave behind.")') %>%
+  rename("day_week"="What is your favorite day of the week?") %>%
+  rename("bird_type"="Are you a lark, an owl, or a hummingbird?") %>%
+  rename("fav_food"="What is your favorite food?") %>%
+  rename("fav_drink"="What is your favorite drink?") %>%
+  rename("fav_season"="What is your favorite season?") %>%
+  rename("fav_month"="What is your favorite Month?") %>%
+  rename("fav_hobby"="What is one hobby that you enjoy?") %>%
+  rename("degree_prgm"="What is your degree program?") %>%
+  rename("degree_special"="What is your primary specialization?") %>%
+  rename("stats_softwr"="What is your primary statistical software?") %>%
+  rename("R_exper"="What is your level of R experience (1=None, 5=Advanced)?") %>%
+  rename("comf_code"="How comfortable are you with coding?") %>%
+  rename("time_code"="How long have you been coding (in years or months)?") %>%
+  rename("three_learn"="What are three things you hope to learn in this course?") %>%
+  rename("ph_area"="What is your major public health area of interest (e.g. cancer, heart disease, maternal child health, disparities, etc.)?") %>%
+  rename("fav_numb"="What is your favorite number?") %>%
+  rename("birth_day"="What is your birth day (e.g. October 28-report 28)?") %>%
+  rename("birth_month"="What is your birth month (e.g. October 28-report 10)?") %>%
+  rename("home_country"="What is your home country?") %>%
+  rename("home_state"="What is your home state?") %>%
+  rename("home_city"="What is your home city?") %>%
+  rename("edu_level"="What is your highest education level?")
+
+```
+
+4. Write code to determine and display the number of factor, integer, numerical, and character variables there are in the C1survey dataset.
+```{r var_types}
+# count variables by data type
+table(sapply(C1survey_renamed, typeof))
+```
+
+5. a. Using code, check the bday and bmonth variables for any unusual or missing values. If you find any, b. describe what you will do with the unusual values in a comment before or immediately following the code that does it, and c. after you have cleaned up any unusual values, find the median bday and month. *Note: please make sure that your bday and month variables are numeric before doing statistics
+```{r birth_day/month}
+
+
+# Check for unusual/missing values
+table1(~birth_day + birth_month, data = C1survey_renamed)
+# Birth Day: Two unusual values ("13-Aug-97" and "June 8th") and one missing value
+# Birth Month: Four unusual values and one missing value
+
+# Birth Day
+# identify the observations with the odd values
+which(C1survey_renamed$birth_day == "13-Aug-97")
+# Row 18 - next, identify which study ID this corresponds to
+C1survey_renamed$ID[18]
+# Also 18
+which(C1survey_renamed$birth_day == "June 8th")
+# Row 16 - next, identify which study ID this corresponds to
+C1survey_renamed$ID[16]
+# Also 16
+
+# Birth Month
+# identify the observations with the odd values
+which(C1survey_renamed$birth_month == "August")
+# Row 18 (same as study ID number)
+which(C1survey_renamed$birth_month == "June 8th, 1998")
+# ID = 16
+which(C1survey_renamed$birth_month == "March")
+# ID = 35
+which(C1survey_renamed$birth_month == "October")
+# ID = 13
+
+# Replace the unusual values with the correct values
+C1survey_replaced <- C1survey_renamed %>%
+  mutate(birth_day = replace(birth_day, ID == "18", "13")) %>%
+  mutate(birth_day = replace(birth_day, ID == "16", "8")) %>%
+  mutate(birth_month = replace(birth_month, ID == "18", "8")) %>%
+  mutate(birth_month = replace(birth_month, ID == "16", "6")) %>%
+  mutate(birth_month = replace(birth_month, ID == "35", "3")) %>%
+  mutate(birth_month = replace(birth_month, ID == "13", "10")) %>%
+# Drop observation with missing value - sadly.... teach me other methods!
+  drop_na(birth_day, birth_month)
+  
+
+# Check if replacement was successful
+table1(~birth_month + birth_day, data = C1survey_renamed)
+table1(~birth_month + birth_day, data = C1survey_replaced)
+# Looks good!
+
+# change data type to numeric
+C1survey_replaced <- C1survey_replaced %>%
+  mutate(birth_day = as.numeric(birth_day)) %>%
+  mutate(birth_month = as.numeric(birth_month))
+
+# find the median
+summary(C1survey_replaced$birth_day)
+# 15
+summary(C1survey_replaced$birth_month)
+# 7
+
+```
+6. a. Create a new variable called bseason that gives the season according to Northern Meteorological season in which respondents were born (winter=12/1 to 2/29, spring=3/1 to 5/31, summer=6/1 to 8/31, fall=9/1 to 11/30). b. Using the table function, print a table of Seasons in the columns and bmonths in the rows that allows you to check that the coding is correct c. Sum the columns using the addmargins function to answer the question of how many classmates were born in each season? Include your answer in the code.
+
+```{r}
+# Part A
+# Create variable bseason (winter=12/1 to 2/29, spring=3/1 to 5/31, summer=6/1 to 8/31, fall=9/1 to 11/30)
+C1survey_replaced <- C1survey_replaced %>%
+  mutate(bseason = ifelse(birth_month == 12 | birth_month <= 2, "winter", 
+                          ifelse(birth_month >= 3 & birth_month <= 5, "spring",
+                                 ifelse(birth_month >= 6 & birth_month <= 8, "summer",
+                                        ifelse(birth_month >= 9 & birth_month <= 11, "fall", birth_month)))))
+# Part B
+# check to make sure this checks out - looks good!
+table1(~bseason, data = C1survey_replaced)
+table1(~birth_month, data = C1survey_renamed)
+
+# Part B
+season_table <- table(C1survey_replaced$bseason, C1survey_replaced$birth_month)
+
+# Part C
+addmargins(season_table)
+# fall = 11
+# spring = 8
+# winter = 9
+# summer = 13
+
+```
+7. Pick your favorite variable to analyze, come up with a question you want to answer with that variable, generate the code, and provide an answer to your question. Describe what you did using comments (i.e. #’s).
+
+```{r}
+
+
+
+```
+
